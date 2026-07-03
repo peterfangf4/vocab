@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>剑雅8-14 生命科学·机考模拟</title>
+<style>
+:root {
+  --header-bg: #1a237e; --header-text: #fff;
+  --bg: #e8eaf6; --panel-bg: #fff; --text: #212121; --muted: #616161;
+  --accent: #1a237e; --accent-light: #c5cae9;
+  --correct: #e8f5e9; --wrong: #ffebee; --border: #e0e0e0;
+  --radius: 6px; --shadow: 0 1px 4px rgba(0,0,0,.1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ===== HEADER ===== */
+.header{background:var(--header-bg);color:var(--header-text);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.header .brand{font-size:.95rem;font-weight:600;letter-spacing:.03em;display:flex;align-items:center;gap:8px}
+.header .brand span{font-size:.7rem;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:10px}
+.header .brand .divider{width:1px;height:20px;background:rgba(255,255,255,.3);margin:0 6px}
+.header .brand .sub{font-weight:400;font-size:.8rem;opacity:.85}
+.header .center{display:flex;align-items:center;gap:12px}
+.header .passage-select{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 14px;font-size:.8rem;cursor:pointer;outline:none;font-family:inherit}
+.header .passage-select option{color:#212121;background:#fff}
+.header .stats{font-size:.78rem;background:rgba(255,255,255,.15);padding:5px 12px;border-radius:14px}
+
+/* ===== BODY LAYOUT ===== */
+.body-wrap{display:flex;flex:1;overflow:hidden}
+/* Left: passage panel */
+.passage-panel{flex:1;min-width:0;background:var(--panel-bg);overflow-y:auto;padding:24px 28px;border-right:2px solid var(--border)}
+.passage-panel h2{font-size:1.15rem;color:var(--accent);margin-bottom:2px}
+.passage-panel .meta{font-size:.75rem;color:var(--muted);margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.passage-panel .reading{font-size:.9rem;line-height:1.85;color:#333}
+.passage-panel .reading p{margin-bottom:12px}
+.passage-panel .reading i,.passage-panel .reading em{color:#555}
+/* Right: questions panel */
+.questions-panel{flex:1;min-width:0;background:#fafafa;overflow-y:auto;padding:20px 24px}
+.questions-panel h3{font-size:.95rem;color:var(--accent);margin:18px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent-light)}
+.questions-panel h3:first-child{margin-top:0}
+.questions-panel .sec-instr{font-size:.78rem;color:var(--muted);margin-bottom:10px;font-style:italic}
+.questions-panel .sec-text{font-size:.85rem;line-height:1.7;margin-bottom:14px;background:#fff;padding:12px 14px;border-radius:var(--radius);border:1px solid var(--border)}
+.questions-panel .sec-text table{font-size:.85rem}
+.questions-panel .sec-text table th{background:#e8eaf6}
+
+/* Question block */
+.q-block{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start;transition:border-color .2s}
+.q-block:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,35,126,.1)}
+.q-num{font-weight:700;color:var(--accent);font-size:.85rem;min-width:32px;padding-top:1px;flex-shrink:0}
+.q-body{flex:1;min-width:0}
+.q-text{font-size:.85rem;margin-bottom:6px;line-height:1.6}
+.q-options{display:flex;flex-wrap:wrap;gap:8px}
+.q-options label{cursor:pointer;padding:5px 14px;border:1.5px solid var(--border);border-radius:18px;font-size:.82rem;transition:all .15s;user-select:none;background:#fff;display:flex;align-items:center;gap:4px}
+.q-options label:hover{border-color:#7986cb;background:#e8eaf6}
+.q-options label.selected{border-color:var(--accent);background:var(--accent-light);font-weight:600}
+.q-options input[type="radio"],.q-options input[type="checkbox"]{display:none}
+.q-input{border:1.5px solid var(--border);border-radius:4px;padding:6px 10px;font-size:.85rem;width:100%;max-width:200px;font-family:inherit;transition:border-color .15s}
+.q-input:focus{outline:none;border-color:var(--accent)}
+.result{display:inline-block;font-size:.78rem;font-weight:600;margin-top:4px}
+.result.correct{color:#2e7d32}
+.result.wrong{color:#c62828}
+
+/* ===== BOTTOM BAR ===== */
+.bottom-bar{background:#fff;border-top:2px solid var(--border);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;flex-wrap:wrap;gap:10px}
+.bottom-bar .btns{display:flex;gap:8px}
+.btn{padding:8px 20px;border:none;border-radius:18px;font-size:.82rem;cursor:pointer;font-weight:600;transition:all .2s;font-family:inherit}
+.btn-check{background:var(--accent);color:#fff}
+.btn-check:hover{background:#0d1452}
+.btn-reset{background:#eeeeee;color:#555}
+.btn-reset:hover{background:#ddd}
+.btn-reveal{background:#fff3e0;color:#e65100;border:1.5px solid #ffcc80}
+.btn-reveal:hover{background:#ffe0b2}
+.score-box{font-size:.9rem;font-weight:700;color:var(--accent)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#c5cae9;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#9fa8da}
+
+/* Mobile */
+@media(max-width:900px){
+  .body-wrap{flex-direction:column}
+  .passage-panel{flex:none;max-height:40vh;border-right:none;border-bottom:2px solid var(--border)}
+  .questions-panel{flex:1}
+  .header{flex-wrap:wrap;height:auto;padding:8px 12px;gap:6px}
+  .header .brand{font-size:.8rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="brand">
+    📖 剑雅8-14<div class="divider"></div><div class="sub">生命科学·机考模拟</div>
+  </div>
+  <div class="center">
+    <select class="passage-select" id="passageSelect" onchange="showPassage(this.value)"></select>
+    <div class="stats" id="globalScore">总分：--</div>
+  </div>
+</div>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="body-wrap">
+  <div class="passage-panel" id="readingPanel"></div>
+  <div class="questions-panel" id="questionsPanel"></div>
+</div>
+
+<!-- ===== BOTTOM BAR ===== -->
+<div class="bottom-bar">
+  <div class="btns">
+    <button class="btn btn-check" onclick="checkCurrent()">✅ 批改</button>
+    <button class="btn btn-reset" onclick="resetCurrent()">🔄 重置</button>
+    <button class="btn btn-reveal" onclick="revealCurrent()">👁 显示答案</button>
+  </div>
+  <div class="score-box" id="currentScore"></div>
+</div>
+
+<script>
+// ===== DATA =====
+const passages = [
+{
+  id:1, title:"收集蚂蚁标本", titleEn:"Collecting Ant Specimens", source:"剑8 Test 4 · Reading Passage 3",
+  text:`<p>Collecting ants can be as simple as picking up stray ones and placing them in a glass jar, or as complicated as completing an exhaustive survey of all species present in an area and estimating their relative abundances. The exact method used will depend on the final purpose of the collections. For taxonomy, or classification, long series, from a single nest, which contain all castes (workers, including majors and minors, and, if present, queens and males) are desirable, to allow the determination of variation within species. For ecological studies, the most important factor is collecting identifiable samples of as many of the different species present as possible. Unfortunately, these methods are not always compatible. The taxonomist sometimes overlooks whole species in favour of those groups currently under study, while the ecologist often collects only a limited number of specimens of each species, thus reducing their value for taxonomic investigations.</p>
+<p>To collect as wide a range of species as possible, several methods must be used. These include hand collecting, using baits to attract the ants, ground litter sampling, and the use of pitfall traps. Hand collecting consists of searching for ants everywhere they are likely to occur. This includes on the ground, under rocks, logs or other objects on the ground, in rotten wood on the ground or on trees, in vegetation, on tree trunks and under bark. When possible, collections should be made from nests or foraging columns and at least 20 to 25 individuals collected. This will ensure that all individuals are of the same species, and so increase their value for detailed studies. Since some species are largely nocturnal, collecting should not be confined to daytime. Specimens are collected using an aspirator (often called a potter), forceps, a fine, moistened paint brush, or fingers, if the ants are known not to sting. Individual insects are placed in plastic or glass tubes (1.5-3.0 ml capacity for small ants, 5-8 ml for larger ants) containing 75% to 95% ethanol. Plastic tubes with secure tops are better than glass because they are lighter, and do not break as easily if mishandled.</p>
+<p>Baits can be used to attract and concentrate foragers. This often increases the number of individuals collected and attracts species that are otherwise elusive. Sugars and meats or oils will attract different species and a range should be utilised. These baits can be placed either on the ground or on the trunks of trees or large shrubs. When placed on the ground, baits should be situated on small paper cards or other flat, light-coloured surfaces, or in test-tubes or vials. This makes it easier to spot ants and to capture them before they can escape into the surrounding leaf litter.</p>
+<p>Many ants are small and forage primarily in the layer of leaves and other debris on the ground. Collecting these species by hand can be difficult. One of the most successful ways to collect them is to gather the leaf litter in which they are foraging and extract the ants from it. This is most commonly done by placing leaf litter on a screen over a large funnel, often under some heat. As the leaf litter dries, the ants (and other invertebrates) move downward and eventually fall into a container placed at the bottom of the funnel. This method works especially well in rain forests and marshy areas.</p>
+<p>The pitfall trap is another commonly used tool for collecting ants. A pitfall trap can be any small container placed in the ground with the top level with the surrounding surface and filled with a preservative. Ants are collected when they fall into the trap while foraging. The diameter of the traps can vary from about 18 mm to 10 cm and the number used can vary from a few to several hundred. The size of the traps used is influenced largely by personal preference (although larger sizes are generally better), while the number will be determined by the study being undertaken. The preservative used is usually ethylene glycol or propylene glycol, as alcohol will evaporate quickly and the traps will dry out. One advantage of pitfall traps is that they can be used to collect over a period of time with minimal maintenance and intervention. One disadvantage is that some species are not collected as they either avoid the traps or do not commonly encounter them while foraging.</p>`,
+  sections:[
+    {title:"Questions 27–30：判断题（TRUE / FALSE / NOT GIVEN）",type:"tfng",questions:[
+      {id:"p1q1",num:27,text:"Taxonomic research requires collections from a single nest containing all castes.",ans:"TRUE"},
+      {id:"p1q2",num:28,text:"Ecological studies typically collect large numbers of specimens of each species.",ans:"FALSE"},
+      {id:"p1q3",num:29,text:"Hand collecting can be done effectively only during daylight hours.",ans:"FALSE"},
+      {id:"p1q4",num:30,text:"Plastic tubes are recommended over glass tubes for storing ant specimens.",ans:"TRUE"}
+    ]},
+    {title:"Questions 31–36：方法匹配题",type:"match",instr:"A. Hand collecting　B. Baits　C. Ground litter sampling　D. Pitfall traps",questions:[
+      {id:"p1q5",num:31,text:"It is particularly effective in wet environments.",ans:"C"},
+      {id:"p1q6",num:32,text:"Different types of food can attract different ant species.",ans:"B"},
+      {id:"p1q7",num:33,text:"It involves searching under rocks, logs and bark.",ans:"A"},
+      {id:"p1q8",num:34,text:"Traps must contain a preservative that does not evaporate quickly.",ans:"D"},
+      {id:"p1q9",num:35,text:"Paper cards or flat light-coloured surfaces can help spot ants.",ans:"B"},
+      {id:"p1q10",num:36,text:"It can operate for extended periods with little maintenance.",ans:"D"}
+    ]},
+    {title:"Questions 37–40：摘要填空",type:"blank",instr:"每空填一个词。",secText:`For effective hand collecting, at least <b>37</b> ______ individuals should be taken from each nest or foraging column. Ants are collected using an aspirator, <b>38</b> ______, a paint brush or fingers. Most specimens are stored in alcohol of <b>39</b> ______ concentration. For ground litter sampling, the most common technique uses a <b>40</b> ______ with a screen placed over it.`,questions:[
+      {id:"p1q11",num:37,ans:"20"},
+      {id:"p1q12",num:38,ans:"forceps"},
+      {id:"p1q13",num:39,ans:"75%"},
+      {id:"p1q14",num:40,ans:"funnel"}
+    ]}
+  ]
+},
+{
+  id:2, title:"龟的历史", titleEn:"The History of the Tortoise", source:"剑9 Test 1 · Reading Passage 3",
+  text:`<p>If you go back far enough, everything lived in the sea. At various points in evolutionary history, enterprising individuals within many different animal groups moved out onto the land, sometimes even to the most parched deserts, taking their own private seawater with them in blood and cellular fluids. In addition to the reptiles, birds, mammals and insects which we see all around us, other groups that have succeeded out of water include scorpions, snails, crustaceans such as woodlice and land crabs, millipedes and centipedes, spiders and various worms. And we mustn't forget the plants, without whose prior invasion of the land none of the other migrations could have happened.</p>
+<p>Moving from water to land involved a major redesign of every aspect of life, including breathing and reproduction. Nevertheless, a good number of thoroughgoing land animals later turned around, abandoned their hard-earned terrestrial adaptations and returned to the water again. Seals have only gone part way back. They show us what the intermediates might have been like, on the way to extreme cases such as whales and dugongs. Whales (including the small whales we call dolphins and porpoises) and dugongs, with their close cousins the manatees, ceased to be land creatures altogether and reverted to the full marine habits of their remote ancestors. They don't even come ashore to breed. They do, however, still breathe air, having never developed anything equivalent to the gills of their earlier marine incarnation. Turtles went back to the sea a very long time ago and, like all vertebrate returnees to the water, they breathe air. However, they are, in one respect, less fully given back to the water than whales or dugongs, for turtles still lay their eggs on beaches.</p>
+<p>There is evidence that all modern turtles are descended from a terrestrial ancestor which lived before most of the dinosaurs. There are two key fossils called <i>Proganochelys quenstedti</i> and <i>Palaeochersis talampayensis</i> dating from early dinosaur times, which appear to be close to the ancestry of all modern turtles and tortoises. You might wonder how we can tell whether fossil animals lived on land or in water, especially if only fragments are found. Sometimes it's obvious. There are amazingly well-preserved fossils of ichthyosaurs, which were marine reptiles resembling dolphins, with babies fossilised inside the mother's body, showing that ichthyosaurs gave birth to live young rather than laying eggs. Tortoises, by contrast, all lay eggs on land.</p>
+<p>All the land tortoise species formed a tight cluster of points in a DNA analysis; all the water turtles formed another tight cluster. The earliest land tortoises probably came from a water turtle that developed adaptations for a fully terrestrial life, then much later, one lineage of these land tortoises returned to a marine existence — giving rise to today's sea turtles. So what the fossil evidence and DNA analysis together reveal is a surprising evolutionary journey: sea creatures → land tortoises → back to sea as modern turtles.</p>`,
+  sections:[
+    {title:"Questions 27–30：简答题",type:"blank",instr:"用不超过两个词回答。",questions:[
+      {id:"p2q1",num:27,text:"What had to happen before animals could move onto land?",ans:"plants arrived"},
+      {id:"p2q2",num:28,text:"What do whales and dugongs not do that turtles still do?",ans:"lay eggs"},
+      {id:"p2q3",num:29,text:"Which creature's fossils show they gave birth to live young?",ans:"ichthyosaurs"},
+      {id:"p2q4",num:30,text:"What technique alongside fossils helped reveal the tortoise's evolutionary history?",ans:"DNA analysis"}
+    ]},
+    {title:"Questions 31–36：判断正误（YES / NO / NOT GIVEN）",type:"ynng",questions:[
+      {id:"p2q5",num:31,text:"The invasion of land by plants enabled animals to follow.",ans:"YES"},
+      {id:"p2q6",num:32,text:"Seals have fully returned to a marine lifestyle.",ans:"NO"},
+      {id:"p2q7",num:33,text:"All modern turtles lay their eggs on beaches.",ans:"NO"},
+      {id:"p2q8",num:34,text:"<i>Proganochelys</i> is an ancestor of all modern turtles.",ans:"YES"},
+      {id:"p2q9",num:35,text:"Ichthyosaurs were closely related to modern dolphins.",ans:"NOT GIVEN"},
+      {id:"p2q10",num:36,text:"DNA evidence confirms that sea turtles evolved from land tortoises.",ans:"YES"}
+    ]}
+  ]
+},
+{
+  id:3, title:"伟大的迁徙", titleEn:"Great Migrations", source:"剑11 Test 3 · Reading Passage 2",
+  text:`<p>Animal migration, however it is defined, is far more than just the movement of animals. It can roughly be defined as the movement of large numbers of animals from one place to another, usually at regular times, often over long distances. For a truly great migration, however, the key criteria are that the journey is seasonal, involves a return journey, and the animals move together in large numbers on a route that is repeated annually.</p>
+<p>Arctic terns, for example, undertake the longest migration of any animal, flying from their Arctic breeding grounds to the Antarctic and back again each year. During its lifetime, an Arctic tern may fly a distance equivalent to three round trips to the moon. Humpback whales, too, are great migrators, travelling from their summer feeding grounds in polar waters to warmer tropical waters to breed and give birth, and then back again. But migration is not confined to birds and marine mammals. On land, wildebeest in their millions travel around the Serengeti in Tanzania and the Masai Mara in Kenya in search of fresh grass following the rains. In North America, monarch butterflies migrate up to 4,000 kilometres from Canada to Mexico, with the amazing fact that no single individual makes the entire round trip — it can take up to five generations to complete one migration cycle.</p>
+<p>Why do animals migrate? The reasons are varied but usually relate to seasonal changes in food availability, weather, or breeding requirements. The urge to migrate is a combination of genetic programming and environmental cues such as changing day length, temperature, and food supply. Many migratory species are able to navigate with astonishing precision using a combination of methods: the sun by day, the stars by night, the Earth's magnetic field, and even smell. How exactly young animals making their first migration know where to go without guidance from experienced adults remains one of the great mysteries of biology.</p>
+<p>However, migration is an increasingly dangerous undertaking. Habitat destruction along migration routes, climate change altering the timing of seasonal events, and human-made obstacles such as roads, fences and wind turbines all take a heavy toll on migrating animals. As the human population continues to grow and climate change intensifies, the great migrations that have continued for millennia are under threat as never before.</p>`,
+  sections:[
+    {title:"Questions 14–18：单选题",type:"mcq",questions:[
+      {id:"p3q1",num:14,text:"What is a key characteristic of a 'great migration' according to the passage?",opts:["A. It involves movement in search of food","B. It covers extremely long distances","C. It is an annual round trip made in large numbers","D. It only occurs in birds and mammals"],ans:"2"},
+      {id:"p3q2",num:15,text:"How far might an Arctic tern fly in its lifetime?",opts:["A. From the Arctic to the Antarctic once","B. The equivalent of three trips to the moon","C. 4,000 kilometres","D. Twice around the Earth"],ans:"1"},
+      {id:"p3q3",num:16,text:"The monarch butterfly migration is unusual because",opts:["A. it covers the longest distance of any insect","B. the butterflies travel in groups of millions","C. no single butterfly completes the round trip","D. they migrate from Mexico to Canada"],ans:"2"},
+      {id:"p3q4",num:17,text:"What triggers the urge to migrate in animals?",opts:["A. Genetic programming only","B. Environmental cues only","C. A combination of genetics and environmental factors","D. Leadership from experienced adults"],ans:"2"},
+      {id:"p3q5",num:18,text:"What is NOT mentioned as a method used by animals for navigation?",opts:["A. The position of the sun","B. The Earth's magnetic field","C. Sound echoes","D. The stars at night"],ans:"2"}
+    ]},
+    {title:"Questions 19–22：摘要填空",type:"blank",instr:"每空填一个词。",secText:`Migration is driven partly by <b>19</b> ______ programming and partly by environmental signals such as changing <b>20</b> ______ length. Migrating animals use various methods including the <b>21</b> ______ field to find their way. Human activities and <b>22</b> ______ change are now threatening these ancient journeys.`,questions:[
+      {id:"p3q6",num:19,ans:"genetic"},{id:"p3q7",num:20,ans:"day"},{id:"p3q8",num:21,ans:"magnetic"},{id:"p3q9",num:22,ans:"climate"}
+    ]},
+    {title:"Questions 23–26：判断正误（TRUE / FALSE / NOT GIVEN）",type:"tfng",questions:[
+      {id:"p3q10",num:23,text:"Wildebeest migration follows seasonal rainfall patterns.",ans:"TRUE"},
+      {id:"p3q11",num:24,text:"Scientists fully understand how young animals navigate their first migration.",ans:"FALSE"},
+      {id:"p3q12",num:25,text:"Wind turbines have contributed to declining migratory bird populations.",ans:"TRUE"},
+      {id:"p3q13",num:26,text:"Climate change is the single greatest threat to animal migration.",ans:"NOT GIVEN"}
+    ]}
+  ]
+},
+{
+  id:4, title:"飞翔的陆龟", titleEn:"Flying Tortoises", source:"剑12 Test 7 · Reading Passage 1",
+  text:`<p>An airborne reintroduction programme has helped conservationists take significant steps to protect the endangered Galapagos tortoise.</p>
+<p>The Galapagos Islands, a chain of volcanic islands in the Pacific Ocean off the coast of Ecuador, are famous for their unique wildlife. Among the most iconic inhabitants are the giant tortoises, which can live for over 100 years and weigh up to 250 kg. When Charles Darwin visited the islands in 1835, he noted that there were hundreds of thousands of these enormous reptiles, but by the 1970s their numbers had dwindled to just 3,000 due to hunting by sailors and the introduction of invasive species such as goats, which competed for food.</p>
+<p>Conservation efforts began in earnest in the 1960s with the establishment of the Charles Darwin Research Station and the Galapagos National Park. Captive breeding programmes were set up, and young tortoises were raised until they were large enough to resist predators, typically at around five years of age, before being released back into the wild. But the rugged terrain of the islands made the transportation of these heavy reptiles extremely difficult by land.</p>
+<p>The solution was an unusual one: helicopters. Beginning in the 1990s, conservationists began airlifting juvenile tortoises to remote parts of the islands where they could be reintroduced. The tortoises, each weighing up to 5 kg, were carefully placed in padded boxes and flown by helicopter to inaccessible areas. This 'flying tortoise' programme has been remarkably successful. On the island of Española, for example, the tortoise population has recovered from just 14 individuals in the 1960s to over 1,000 today. Similar success has been seen on other islands, with some populations now breeding naturally without human assistance — the ultimate goal of any reintroduction programme.</p>`,
+  sections:[
+    {title:"Questions 1–7：简答题",type:"blank",instr:"用不超过三个词回答。",questions:[
+      {id:"p4q1",num:1,text:"Where are the Galapagos Islands located?",ans:"Pacific Ocean"},
+      {id:"p4q2",num:2,text:"How long can Galapagos giant tortoises live?",ans:"over 100 years"},
+      {id:"p4q3",num:3,text:"What was the approximate tortoise population by the 1970s?",ans:"3000"},
+      {id:"p4q4",num:4,text:"What invasive species competed with tortoises for food?",ans:"goats"},
+      {id:"p4q5",num:5,text:"At what age were captive-bred tortoises typically released?",ans:"five years"},
+      {id:"p4q6",num:6,text:"What method was used to transport tortoises to remote areas?",ans:"helicopters"},
+      {id:"p4q7",num:7,text:"How many tortoises remained on Española in the 1960s?",ans:"14"}
+    ]},
+    {title:"Questions 8–13：判断正误（TRUE / FALSE / NOT GIVEN）",type:"tfng",questions:[
+      {id:"p4q8",num:8,text:"Charles Darwin discovered the Galapagos tortoises in 1835.",ans:"TRUE"},
+      {id:"p4q9",num:9,text:"Hunting was the only reason for the tortoise population decline.",ans:"FALSE"},
+      {id:"p4q10",num:10,text:"The captive breeding programme started in the 1970s.",ans:"FALSE"},
+      {id:"p4q11",num:11,text:"Juvenile tortoises were released once they reached 5 kg.",ans:"TRUE"},
+      {id:"p4q12",num:12,text:"The 'flying tortoise' programme began in the 1980s.",ans:"FALSE"},
+      {id:"p4q13",num:13,text:"All reintroduced populations now breed without human help.",ans:"FALSE"}
+    ]}
+  ]
+},
+{
+  id:5, title:"带回大型猫科动物", titleEn:"Bring Back the Big Cats", source:"剑12 Test 8 · Reading Passage 2",
+  text:`<p><em>It's time to start returning vanished native animals to Britain, says John Vesty</em></p>
+<p>There is a poem, written around 598 AD, which describes hunting a mystery animal called a <i>llewyn</i>. But what was it? Nothing seemed to fit, until 2006, when an animal bone, dating from around the same period, was found in the Kinsey Cave in northern England. Until this discovery, the lynx — a large spotted cat with tasselled ears — was presumed to have died out in Britain at least 6,000 years ago, before the inhabitants of these islands took up farming. But the 2006 find, together with three others in Yorkshire and Scotland, is compelling evidence that the lynx and the mysterious <i>llewyn</i> were in fact one and the same animal. If this is so, it would bring forward the tassel-eared cat's estimated extinction date by roughly 5,000 years.</p>
+<p>However, this is not quite the last glimpse of the animal in British culture. A 9th-century stone cross from the Isle of Eigg shows, alongside the deer, boar and aurochs pursued by a mounted hunter, a speckled cat with tasselled ears. Were it not for the animal's backside having worn away with time, we could have been certain, as the lynx's stubby tail is unmistakable. But even without this key feature, it's hard to see what else the creature could have been. The lynx is now becoming the totemic animal of a movement that is transforming British environmentalism: rewilding.</p>
+<p>Rewilding means the mass restoration of damaged ecosystems. It involves letting trees return to places that have been denuded, allowing parts of the seabed to recover from trawling and dredging, permitting rivers to flow freely again. Above all, it means bringing back missing species. One of the most striking findings of modern ecology is that ecosystems without large predators behave in completely different ways from those that retain them. Some of them drive dynamic processes that resonate through the whole food chain, creating niches for hundreds of species that might otherwise struggle to survive. The killers turn out to be bringers of life.</p>
+<p>Such findings present a big challenge to British conservation, which has often selected arbitrary assemblages of plants and animals and sought, at great effort and expense, to prevent them from changing. It has tried to preserve the living world as if it were a jar of pickles, letting nothing in and nothing out, keeping nature in a state of arrested development. But ecosystems are not merely collections of species; they are also the dynamic and ever-shifting relationships between them. And this dynamism often depends on large predators.</p>
+<p>At sea the potential is even greater: by protecting large areas from commercial fishing, we could once more see what 18th-century literature describes: vast shoals of fish being chased by fin and sperm whales, within sight of the English shore. This policy would also greatly boost catches in the surrounding seas.</p>
+<p>Rewilding is a rare example of an environmental movement in which campaigners articulate what they are for rather than only what they are against. One of the reasons why the enthusiasm for rewilding is spreading so quickly in Britain is that it helps to create a more inspiring vision than the green movement's usual promise.</p>
+<p>The lynx presents no threat to human beings: there is no known instance of one preying on people. It is a specialist predator of roe deer, a species that has exploded in Britain in recent decades, holding back, by intensive browsing, attempts to re-establish forests. It will also winkle out sika deer: an exotic species that is almost impossible for human beings to control. The attempt to reintroduce this predator marries well with the aim of bringing forests back to parts of our bare and barren uplands. The lynx requires deep cover, and as such presents little risk to sheep and other livestock, which are supposed, as a condition of farm subsidies, to be kept out of the woods.</p>
+<p>On a recent trip to the Cairngorm Mountains, I heard several conservationists suggest that the lynx could be reintroduced there within 20 years. If trees return to the bare hills elsewhere in Britain, the big cats could soon follow. There is nothing extraordinary about these proposals, seen from the perspective of anywhere else in Europe. The lynx has now been reintroduced to the Jura Mountains, the Alps, the Vosges in eastern France and the Harz mountains in Germany, and has re-established itself in many more places. The European population has tripled since 1970 to roughly 10,000. Large-scale rewilding is happening almost everywhere — except Britain.</p>
+<p>Here, attitudes are just beginning to change. Conservationists are starting to accept that the old preservation-jar model is failing, even on its own terms. An organisation is being set up that will seek to catalyse the rewilding of land and sea across Britain, its aim being to reintroduce that rarest of species to British ecosystems: hope.</p>`,
+  sections:[
+    {title:"Questions 14–18：单选题",type:"mcq",questions:[
+      {id:"p5q1",num:14,text:"What did the 2006 discovery reveal about the lynx?",opts:["A. Its physical appearance was very distinctive","B. Its extinction was linked to the spread of farming","C. It vanished from Britain several thousand years ago","D. It survived in Britain much later than previously thought"],ans:"3"},
+      {id:"p5q2",num:15,text:"What point does the writer make about large predators?",opts:["A. Their presence can increase biodiversity","B. They may cause damage to local ecosystems","C. Their behaviour can alter according to the environment","D. They should be reintroduced only to areas where they were native"],ans:"0"},
+      {id:"p5q3",num:16,text:"What does the writer suggest about British conservation?",opts:["A. It has failed to achieve its aims","B. It is beginning to change direction","C. It has taken a misguided approach","D. It has focused on the most widespread species"],ans:"2"},
+      {id:"p5q4",num:17,text:"Protecting large areas of the sea from commercial fishing would result in",opts:["A. practical benefits for the fishing industry","B. some short-term losses to the fishing industry","C. widespread opposition from the fishing industry","D. certain changes to techniques within the fishing industry"],ans:"0"},
+      {id:"p5q5",num:18,text:"What distinguishes rewilding from other environmental campaigns?",opts:["A. Its objective is more achievable","B. Its supporters are more articulate","C. Its positive message is more appealing","D. It is based on sounder scientific principles"],ans:"2"}
+    ]},
+    {title:"Questions 19–22：摘要选词填空",type:"match",instr:"选项：A. trees　B. endangered species　C. hillsides　D. wild animals　E. humans　F. farm animals",secText:`<b>Reintroducing the lynx to Britain</b><br>The lynx has never put <b>19</b> ______ in danger. It would reduce numbers of certain <b>20</b> ______. It presents minimal threat to <b>21</b> ______ if they are kept away from lynx habitats. The programme would also help return native <b>22</b> ______ to certain areas.`,questions:[
+      {id:"p5q6",num:19,ans:"E"},{id:"p5q7",num:20,ans:"D"},{id:"p5q8",num:21,ans:"F"},{id:"p5q9",num:22,ans:"A"}
+    ]},
+    {title:"Questions 23–26：判断正误（YES / NO / NOT GIVEN）",type:"ynng",questions:[
+      {id:"p5q10",num:23,text:"Britain could become the first European country to reintroduce the lynx.",ans:"NO"},
+      {id:"p5q11",num:24,text:"The large growth in the European lynx population since 1970 has exceeded conservationists' expectations.",ans:"NOT GIVEN"},
+      {id:"p5q12",num:25,text:"Changes in agricultural practices have extended the habitat of the lynx in Europe.",ans:"YES"},
+      {id:"p5q13",num:26,text:"It has become apparent that species reintroduction has commercial advantages.",ans:"YES"}
+    ]}
+  ]
+},
+{
+  id:6, title:"椰子树", titleEn:"The Coconut Palm", source:"剑13 Test 3 · Reading Passage 1",
+  text:`<p>For millennia, the coconut has been central to the lives of people in tropical regions around the world. The coconut palm, <i>Cocos nucifera</i>, is one of the most widely grown trees in the tropics, and its fruits have been used not only for food and drink, but also for shelter, fuel and various household items. Every part of the coconut palm can be utilised, earning it the nickname 'the tree of life' in many cultures.</p>
+<p>The coconut palm grows best in sandy soils in coastal areas with abundant sunlight, regular rainfall and high humidity. It is remarkably tolerant of saline conditions and can thrive where few other plants can survive. The tree can grow up to 30 metres tall, with a slender, often curved trunk topped with a crown of large, feathery leaves that can be up to six metres long. A healthy coconut palm can produce between 30 and 75 fruits per year and can continue producing for up to 80 years.</p>
+<p>The coconut itself is not actually a nut but a drupe — a fruit with a hard stony covering enclosing the seed. It consists of three layers: the outer layer (exocarp), which is smooth and green when young, turning brown as the fruit matures; the middle layer (mesocarp), made up of fibrous coir; and the hard inner layer (endocarp), which is the familiar brown 'shell'. Inside the shell is the white, fleshy endosperm — the coconut 'meat' — and the watery liquid known as coconut water.</p>
+<p>The origins of the coconut have long been debated. For many years, scientists believed that the coconut originated in the Americas and was later spread by ocean currents and human activity. However, more recent genetic research suggests that the coconut palm originated in the Indian Ocean basin, possibly in the region of Southeast Asia. The coconut's ability to float for long periods in seawater and remain viable has allowed it to colonise tropical coastlines around the world without human assistance. Coconuts can float for up to 110 days and still germinate upon reaching land.</p>
+<p>Coconut products are now a major global industry. Apart from the traditional uses of coconut flesh, milk and oil in cooking, coconut derivatives are used in a wide variety of products ranging from cosmetics and soaps to biofuels. The coir fibre from the husk is used to make ropes, mats and brushes, while the hard shell can be carved into utensils and ornaments. Even the leaves are used for thatching and weaving. In recent years, coconut water has become a popular health drink in Western markets, and virgin coconut oil is widely promoted for its health benefits.</p>`,
+  sections:[
+    {title:"Questions 1–5：表格填空",type:"blank",instr:"每空填一个词。",secText:`<table style="width:100%;border-collapse:collapse;font-size:.82rem"><tr style="background:#e8eaf6"><th style="padding:5px 8px;border:1px solid #ccc;text-align:left">Coconut part</th><th style="padding:5px 8px;border:1px solid #ccc;text-align:left">Use / Description</th></tr><tr><td style="padding:5px 8px;border:1px solid #ccc">outer layer</td><td style="padding:5px 8px;border:1px solid #ccc">smooth, green turning <b>1</b> ______</td></tr><tr><td style="padding:5px 8px;border:1px solid #ccc">middle layer (coir)</td><td style="padding:5px 8px;border:1px solid #ccc">used for <b>2</b> ______, mats, brushes</td></tr><tr><td style="padding:5px 8px;border:1px solid #ccc">inner layer (shell)</td><td style="padding:5px 8px;border:1px solid #ccc">carved into <b>3</b> ______</td></tr><tr><td style="padding:5px 8px;border:1px solid #ccc">coconut water</td><td style="padding:5px 8px;border:1px solid #ccc">a drink; source of nutrients for plants</td></tr><tr><td style="padding:5px 8px;border:1px solid #ccc">coconut flesh</td><td style="padding:5px 8px;border:1px solid #ccc">oil for cooking and <b>4</b> ______</td></tr><tr><td style="padding:5px 8px;border:1px solid #ccc">coir fibre</td><td style="padding:5px 8px;border:1px solid #ccc">from the <b>5</b> ______</td></tr></table>`,questions:[
+      {id:"p6q1",num:1,ans:"brown"},{id:"p6q2",num:2,ans:"ropes"},{id:"p6q3",num:3,ans:"utensils"},{id:"p6q4",num:4,ans:"cosmetics"},{id:"p6q5",num:5,ans:"husk"}
+    ]},
+    {title:"Questions 6–8：填空题",type:"blank",text:"Coconut derivatives: glycerine used in <b>6</b> ______; coconut water is a popular <b>7</b> ______ drink in the West; the coconut industry is worth <b>8</b> ______ of dollars annually.",questions:[
+      {id:"p6q6",num:6,ans:"soaps"},{id:"p6q7",num:7,ans:"health"},{id:"p6q8",num:8,ans:"billions"}
+    ]},
+    {title:"Questions 9–13：判断正误（TRUE / FALSE / NOT GIVEN）",type:"tfng",questions:[
+      {id:"p6q9",num:9,text:"Coconut seeds need shade in order to germinate.",ans:"FALSE"},
+      {id:"p6q10",num:10,text:"Coconuts were probably transported to Asia from America in the 16th century.",ans:"FALSE"},
+      {id:"p6q11",num:11,text:"Coconuts found on the west coast of America were a different type from those on the east coast.",ans:"NOT GIVEN"},
+      {id:"p6q12",num:12,text:"All the coconuts found in Asia are cultivated varieties.",ans:"FALSE"},
+      {id:"p6q13",num:13,text:"Coconuts are cultivated in different ways in America and the Pacific.",ans:"NOT GIVEN"}
+    ]}
+  ]
+},
+{
+  id:7, title:"拯救昆虫以发现新药", titleEn:"Saving Bugs to Find New Drugs", source:"剑14 Test 3 · Reading Passage 2",
+  text:`<p><em>Zoologist Ross Piper looks at the potential of insects in pharmaceutical research</em></p>
+<p><b>A</b> More drugs than you might think are derived from, or inspired by, compounds found in living things. Looking to nature for the soothing and curing of our ailments is nothing new — we have been doing it for tens of thousands of years. You only have to look at other primates — such as the capuchin monkeys who rub themselves with toxin-oozing millipedes to deter mosquitoes, or the chimpanzees who use noxious forest plants to rid themselves of intestinal parasites — to realise that our ancient ancestors too probably had a basic grasp of medicine.</p>
+<p><b>B</b> Pharmaceutical science and chemistry built on these ancient foundations and perfected the extraction, characterisation, modification and testing of these natural products. Then, for a while, modern pharmaceutical science moved its focus away from nature and into the laboratory, designing chemical compounds from scratch. The main cause of this shift is that although there are plenty of promising chemical compounds in nature, finding them is far from easy. Securing sufficient numbers of the organism in question, isolating and characterising the compounds of interest, and producing large quantities of these compounds are all significant hurdles.</p>
+<p><b>C</b> Laboratory-based drug discovery has achieved varying levels of success, something which has now prompted the development of new approaches focusing once again on natural products. With the ability to mine genomes for useful compounds, it is now evident that we have barely scratched the surface of nature's molecular diversity. This realisation, together with several looming health crises, such as antibiotic resistance, has put bioprospecting — the search for useful compounds in nature — firmly back on the map.</p>
+<p><b>D</b> Insects are the undisputed masters of the terrestrial domain, where they occupy every possible niche. Consequently, they have a bewildering array of interactions with other organisms, something which has driven the evolution of an enormous range of very interesting compounds for defensive and offensive purposes. Their remarkable diversity exceeds that of every other group of animals on the planet combined. Yet even though insects are far and away the most diverse animals in existence, their potential as sources of therapeutic compounds is yet to be realised.</p>
+<p><b>E</b> From the tiny proportion of insects that have been investigated, several promising compounds have been identified. For example, alloferon, an antimicrobial compound produced by blow fly larvae, is used as an antiviral and antitumor agent in South Korea and Russia. The larvae of a few other insect species are being investigated for the potent antimicrobial compounds they produce.</p>
+<p><b>F</b> Why is it that insects have received relatively little attention in bioprospecting? Firstly, there are so many insects that, without some manner of targeted approach, investigating this huge variety of species is a daunting task. Secondly, insects are generally very small, and the glands inside them that secrete potentially useful compounds are smaller still. This can make it difficult to obtain sufficient quantities of the compound for subsequent testing. Thirdly, although we consider insects to be everywhere, the reality of this ubiquity is vast numbers of a few extremely common species. Many insect species are infrequently encountered and very difficult to rear in captivity, which, again, can leave us with insufficient material to work with.</p>
+<p><b>G</b> My colleagues and I at Aberystwyth University in the UK have developed an approach in which we use our knowledge of ecology as a guide to target our efforts. The creatures that particularly interest us are the many insects that secrete powerful poison for subduing prey and keeping it fresh for future consumption. There are even more insects that are masters of exploiting filthy habitats, such as faeces and carcasses, where they are regularly challenged by thousands of microorganisms. These insects have many antimicrobial compounds for dealing with pathogenic bacteria and fungi, suggesting that there is certainly potential to find many compounds that can serve as or inspire new antibiotics.</p>
+<p><b>H</b> Although natural history knowledge points us in the right direction, it doesn't solve the problems associated with obtaining useful compounds from insects. Fortunately, it is now possible to snip out the stretches of the insect's DNA that carry the codes for the interesting compounds and insert them into cell lines that allow larger quantities to be produced. And although the road from isolating and characterising compounds with desirable qualities to developing a commercial product is very long and full of pitfalls, the variety of successful animal-derived pharmaceuticals on the market demonstrates there is a precedent here that is worth exploring.</p>
+<p><b>I</b> With every bit of wilderness that disappears, we deprive ourselves of potential medicines. As much as I'd love to help develop a groundbreaking insect-derived medicine, my main motivation for looking at insects in this way is conservation. I sincerely believe that all species, however small and seemingly insignificant, have a right to exist for their own sake. If we can shine a light on the darker recesses of nature's medicine cabinet, exploring the useful chemistry of the most diverse animals on the planet, I believe we can make people think differently about the value of nature.</p>`,
+  sections:[
+    {title:"Questions 14–20：段落匹配",type:"match",instr:"以下信息出现在哪一段？写字母 A–I。",questions:[
+      {id:"p7q1",num:14,text:"Mention of factors driving a renewed interest in natural medicinal compounds",ans:"C"},
+      {id:"p7q2",num:15,text:"How recent technological advances have made insect research easier",ans:"H"},
+      {id:"p7q3",num:16,text:"Examples of animals which use medicinal substances from nature",ans:"A"},
+      {id:"p7q4",num:17,text:"Reasons why it is challenging to use insects in drug research",ans:"F"},
+      {id:"p7q5",num:18,text:"Reference to how interest in drug research may benefit wildlife",ans:"I"},
+      {id:"p7q6",num:19,text:"A reason why nature-based medicines fell out of favour for a period",ans:"B"},
+      {id:"p7q7",num:20,text:"An example of an insect-derived medicine in use at the moment",ans:"E"}
+    ]},
+    {title:"Questions 21–22：多选题（选两项）",type:"mcq_multi",instr:"Which TWO make insects interesting for drug research?",questions:[
+      {id:"p7q8",num:"21-22",text:"",opts:["A. the huge number of individual insects","B. the variety of substances insects have developed to protect themselves","C. the potential to extract and make use of insects' genetic codes","D. the similarities between different species of insect","E. the manageable size of most insects"],ans:["1","2"]}
+    ]},
+    {title:"Questions 23–26：摘要填空",type:"blank",instr:"每空填一个词。",secText:`<b>Research at Aberystwyth University</b><br>Ross Piper and fellow zoologists are using their expertise in <b>23</b> ______ when undertaking bioprospecting with insects. They are especially interested in the compounds that insects produce to overpower and preserve their <b>24</b> ______. They are also interested in compounds which insects use to protect themselves from pathogenic bacteria and fungi found in their <b>25</b> ______. Piper hopes that these substances will be useful in the development of drugs such as <b>26</b> ______.`,questions:[
+      {id:"p7q10",num:23,ans:"ecology"},{id:"p7q11",num:24,ans:"prey"},{id:"p7q12",num:25,ans:"habitats"},{id:"p7q13",num:26,ans:"antibiotics"}
+    ]}
+  ]
+}
+];
+
+// ===== STATE =====
+let currentIdx = 0;
+
+// ===== INIT =====
+const select = document.getElementById('passageSelect');
+passages.forEach((p,i) => {
+  const opt = document.createElement('option');
+  opt.value = i; opt.textContent = `${i+1}. ${p.title} — ${p.titleEn}`;
+  select.appendChild(opt);
+});
+
+function showPassage(idx) {
+  currentIdx = parseInt(idx);
+  select.value = currentIdx;
+  const p = passages[currentIdx];
+
+  // Left: reading
+  const rp = document.getElementById('readingPanel');
+  rp.innerHTML = `<h2>${p.title} <small style="font-weight:400;color:var(--muted);font-size:.85rem">— ${p.titleEn}</small></h2>
+    <div class="meta">📄 ${p.source}</div>
+    <div class="reading">${p.text}</div>`;
+  rp.scrollTop = 0;
+
+  // Right: questions
+  const qp = document.getElementById('questionsPanel');
+  let html = '';
+  p.sections.forEach(sec => {
+    html += `<h3>${sec.title}</h3>`;
+    if (sec.instr) html += `<div class="sec-instr">${sec.instr}</div>`;
+    if (sec.secText) html += `<div class="sec-text">${sec.secText}</div>`;
+
+    sec.questions.forEach(q => {
+      html += `<div class="q-block" data-qid="${q.id}">`;
+      html += `<div class="q-num">Q${q.num}</div>`;
+      html += `<div class="q-body">`;
+      if (q.text) html += `<div class="q-text">${q.text}</div>`;
+
+      if (sec.type === 'tfng' || sec.type === 'ynng') {
+        const opts = sec.type === 'tfng' ? ['TRUE','FALSE','NOT GIVEN'] : ['YES','NO','NOT GIVEN'];
+        html += `<div class="q-options">`;
+        opts.forEach(o => { html += `<label><input type="radio" name="${q.id}" value="${o}">${o}</label>`; });
+        html += `</div>`;
+      } else if (sec.type === 'mcq') {
+        html += `<div class="q-options">`;
+        q.opts.forEach((o,oi) => { html += `<label><input type="radio" name="${q.id}" value="${oi}">${o}</label>`; });
+        html += `</div>`;
+      } else if (sec.type === 'mcq_multi') {
+        html += `<div class="q-options">`;
+        q.opts.forEach((o,oi) => { html += `<label><input type="checkbox" name="${q.id}" value="${oi}">${o}</label>`; });
+        html += `</div>`;
+      } else if (sec.type === 'match' || sec.type === 'blank') {
+        html += `<input type="text" class="q-input" name="${q.id}" placeholder="输入答案">`;
+      }
+
+      html += `<span class="result" id="res_${q.id}"></span>`;
+      html += `</div></div>`;
+    });
+  });
+  qp.innerHTML = html;
+  qp.scrollTop = 0;
+  document.getElementById('currentScore').textContent = '';
+  updateGlobalScore();
+}
+
+// Label click
+document.addEventListener('click', e => {
+  const label = e.target.closest('label');
+  if (!label) return;
+  const input = label.querySelector('input');
+  if (!input || input.type !== 'radio') return;
+  const qBlock = label.closest('.q-block');
+  if (qBlock) qBlock.querySelectorAll('label').forEach(l => l.classList.remove('selected'));
+  label.classList.add('selected');
+});
+
+document.addEventListener('change', e => {
+  if (e.target.type === 'radio' || e.target.type === 'checkbox' || e.target.type === 'text') {
+    const qid = e.target.closest('.q-block')?.dataset.qid;
+    if (qid) { const el = document.getElementById('res_'+qid); if (el) { el.className='result'; el.textContent=''; } }
+  }
+});
+
+function getAnswer(qid) {
+  const inputs = document.getElementsByName(qid);
+  if (!inputs.length) return null;
+  if (inputs[0].type === 'radio') { for (const i of inputs) if (i.checked) return i.value; return null; }
+  if (inputs[0].type === 'checkbox') { const v=[]; for (const i of inputs) if (i.checked) v.push(i.value); return v.sort().join(','); }
+  return inputs[0].value.trim();
+}
+
+function checkCurrent() {
+  const p = passages[currentIdx];
+  let correct=0, total=0;
+  p.sections.forEach(sec => sec.questions.forEach(q => {
+    total++;
+    const ua = getAnswer(q.id);
+    const ca = Array.isArray(q.ans) ? q.ans.sort().join(',') : String(q.ans);
+    const el = document.getElementById('res_'+q.id);
+    if (!el) return;
+    if (ua && ua.toUpperCase() === ca.toUpperCase()) { el.className='result correct'; el.textContent=' ✓ 正确'; correct++; }
+    else { el.className='result wrong'; el.textContent = ua ? ` ✗ 你的答案: ${ua}` : ' ✗ 未作答'; }
+  }));
+  document.getElementById('currentScore').textContent = `本页得分：${correct} / ${total}`;
+  updateGlobalScore();
+}
+
+function resetCurrent() {
+  const p = passages[currentIdx];
+  p.sections.forEach(sec => sec.questions.forEach(q => {
+    document.getElementsByName(q.id).forEach(inp => { inp.checked=false; if(inp.type==='text') inp.value=''; });
+    const el=document.getElementById('res_'+q.id); if(el){el.className='result';el.textContent='';}
+    const qb=document.querySelector(`.q-block[data-qid="${q.id}"]`); if(qb) qb.querySelectorAll('label').forEach(l=>l.classList.remove('selected'));
+  }));
+  document.getElementById('currentScore').textContent='';
+  updateGlobalScore();
+}
+
+function revealCurrent() {
+  const p = passages[currentIdx];
+  p.sections.forEach(sec => sec.questions.forEach(q => {
+    const el=document.getElementById('res_'+q.id); if(!el) return;
+    el.className='result correct'; el.textContent=` → 答案: ${Array.isArray(q.ans)?q.ans.join(', '):q.ans}`;
+  }));
+}
+
+function updateGlobalScore() {
+  let correct=0, total=0;
+  passages.forEach(p => p.sections.forEach(sec => sec.questions.forEach(q => {
+    total++;
+    const ua = getAnswer(q.id);
+    const ca = Array.isArray(q.ans) ? q.ans.sort().join(',') : String(q.ans);
+    if (ua && ua.toUpperCase() === ca.toUpperCase()) correct++;
+  })));
+  document.getElementById('globalScore').textContent = `总分：${correct} / ${total}`;
+}
+
+// Init
+showPassage(0);
+</script>
+</body>
+</html>
